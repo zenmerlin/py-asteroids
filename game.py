@@ -196,8 +196,9 @@ def clamp(val, minimum, maximum):
 config = {
     'screen_width': 800,
     'screen_height': 600,
-    'title': 'my title',
+    'title': 'Turtle Asteroids!',
 }
+
 game = Game(config)
 game.add_player(Player(shapesize=(0.5, 1)))
 game.loop()
