@@ -13,7 +13,6 @@ FPS = 60
 MAX_SPEED = 5
 
 
-
 # Classes
 class Game():
     def __init__(self, config):
@@ -103,8 +102,7 @@ class Sprite():
     def __init__(self, x, y, shape, color, shapesize=(None, None, None)):
         self.x = x
         self.y = y
-        self.dx = 0 # detla y (change in x on each update)
-        self.dy = 0 # delta x (change in y on each update)
+        self.v2d = Vector2d(0, 0) # vector representing dx, dy
         self.heading = 90 # default to up
         self.da = 0 # delta angle
         self.shape = shape
@@ -127,15 +125,14 @@ class Sprite():
         t0 = self.t # record initial time
         self.t = time.time() # set current time
         self.dt = self.t - t0 # calculate elapsed time (delta t)
-        self.x += self.dx * self.dt * FPS
+        self.x += self.v2d.dx * self.dt * FPS
         self.x = wrap(self.x, -(self.game.screen_width + 10)/2,
             (self.game.screen_width + 10)/2)
-        self.y += self.dy * self.dt * FPS
+        self.y += self.v2d.dy * self.dt * FPS
         self.y = wrap(self.y, -(self.game.screen_height + 10)/2,
             (self.game.screen_height + 10)/2)
         self.heading += self.da * self.dt * FPS
         self.heading %= 360
-        #print('t0: {}, self.t: {}, dt: {}, self.da: {}, heading: {}'.format(t0, self.t, dt, self.da, self.heading))
 
     def render(self):
         self.pen.goto(self.x, self.y)
@@ -165,12 +162,10 @@ class Player(Sprite):
         self.da = 0
 
     def accelerate(self):
-        v2d = Vector2d(self.dx, self.dy)
-        v2d.dx += self.accel * math.cos(math.radians(self.heading)) * self.dt * FPS
-        v2d.dy += self.accel * math.sin(math.radians(self.heading)) * self.dt * FPS
-        v2d.clamp(MAX_SPEED)
-        self.dx = v2d.dx
-        self.dy = v2d.dy
+        heading = math.radians(self.heading)
+        self.v2d.dx += self.accel * math.cos(heading) * self.dt * FPS
+        self.v2d.dy += self.accel * math.sin(heading) * self.dt * FPS
+        self.v2d.clamp(MAX_SPEED)
 
 
 # Functions
