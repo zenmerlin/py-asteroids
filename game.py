@@ -4,6 +4,7 @@ Turtle Asteroids
 '''
 
 import math
+import random
 import time
 import turtle
 
@@ -92,7 +93,7 @@ class Game():
 
 
 class Vector2d():
-    def __init__(self, dx, dy):
+    def __init__(self, dx=0, dy=0):
         self.dx = dx
         self.dy = dy
 
@@ -158,7 +159,7 @@ class Sprite():
 
 class Missile(Sprite):
     def __init__(self, x=0, y=0, shape='square', color='red',
-        shapesize=(0.1, 3, None), heading=90, speed=12, max_range=175):
+        shapesize=(0.05, 3, None), heading=90, speed=12, max_range=175):
         Sprite.__init__(self, x, y, shape, color, shapesize, heading)
         self.max_range = max_range
         rad_heading = self.rad_heading()
@@ -216,6 +217,36 @@ class Player(Sprite):
             self.game.add_sprite(missile)
 
 
+class Asteroid(Sprite):
+    instances = []
+    spawn_limit = 3
+
+    def __init__(self, x=0, y=0, shape='circle', color='grey',
+        size=3, v2d=Vector2d()):
+        Sprite.__init__(self, x, y, shape, color, (size, size, size))
+        self.v2d = v2d
+
+    @staticmethod
+    def spawn(game):
+        for i in range(Asteroid.spawn_limit):
+            x = random.randint(-game.screen_width/2,
+                game.screen_width/2)
+            y = random.randint(-game.screen_height/2,
+                game.screen_height/2)
+            dx = random.randint(-1, 1)
+            dy = random.randint(-1, 1)
+
+            ast = Asteroid(x=x, y=y, size=3, v2d=Vector2d(dx, dy))
+            game.add_sprite(ast)
+            Asteroid.instances.append(ast)
+            Asteroid.spawn_limit += 1
+
+    def update(self):
+        Sprite.update(self)
+        if len(Asteroid.instances) == 0:
+            Asteroid.spawn(self.game)
+
+
 # Functions
 def wrap(val, minimum, maximum):
     if val < minimum:
@@ -244,4 +275,5 @@ config = {
 
 game = Game(config)
 game.add_player(Player(shapesize=(0.5, 1)))
+Asteroid.spawn(game)
 game.loop()
