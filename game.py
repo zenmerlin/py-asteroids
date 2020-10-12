@@ -56,6 +56,13 @@ class Game():
         sprite.set_game(self)
         self.sprites.append(sprite)
 
+    def del_sprite(self, sprite):
+        try:
+            self.sprites.remove(sprite)
+            del sprite
+        except ValueError as err:
+            print(err)
+
     def listen(self):
         self.wn.listen()
         self.wn.onkeypress(self.player.accelerate, 'w')
@@ -65,6 +72,8 @@ class Game():
 
         self.wn.onkeypress(self.player.rotate_right, 'd')
         self.wn.onkeyrelease(self.player.stop_rotation, 'd')
+
+        self.wn.onkeypress(self.player.fire, 'space')
 
         self.wn.onkeypress(self.quit, 'BackSpace')
 
@@ -99,11 +108,12 @@ class Vector2d():
 
 
 class Sprite():
-    def __init__(self, x, y, shape, color, shapesize=(None, None, None)):
+    def __init__(self, x, y, shape, color, shapesize=(None, None, None),
+        heading=90):
         self.x = x
         self.y = y
         self.v2d = Vector2d(0, 0) # vector representing dx, dy
-        self.heading = 90 # default to up
+        self.heading = heading # 90 = up
         self.da = 0 # delta angle
         self.shape = shape
         self.color = color
@@ -117,6 +127,9 @@ class Sprite():
 
     def set_game(self, game):
         self.game = game
+
+    def rad_heading(self):
+        return math.radians(self.heading)
 
     def update(self):
         if self.t == 0:
@@ -143,6 +156,26 @@ class Sprite():
         self.pen.stamp()
 
 
+class Missile(Sprite):
+    def __init__(self, x=0, y=0, shape='square', color='red',
+        shapesize=(0.1, 3, None), heading=90, speed=12, max_range=175):
+        Sprite.__init__(self, x, y, shape, color, shapesize, heading)
+        self.max_range = max_range
+        rad_heading = self.rad_heading()
+        self.v2d.dx = speed * math.cos(rad_heading)
+        self.v2d.dy = speed * math.sin(rad_heading)
+        self.dist = 0 # initialize distance travelled
+
+    def update(self):
+        Sprite.update(self)
+        self.dist += self.v2d.magnitude() * self.dt * FPS
+        if self.dist >= self.max_range:
+            self.destruct()
+
+    def destruct(self):
+        self.game.del_sprite(self)
+        
+
 class Player(Sprite):
     def __init__(self, x=0, y=0, shape='triangle', color='white',
         shapesize=(None, None, None)):
@@ -151,6 +184,7 @@ class Player(Sprite):
         self.score = 0
         self.heading = 90
         self.av = 5 # angular velocity (degrees per second)
+        self.shot_cooldown = 0
 
     def rotate_left(self):
         self.da = 1 * self.av
@@ -162,10 +196,24 @@ class Player(Sprite):
         self.da = 0
 
     def accelerate(self):
-        heading = math.radians(self.heading)
+        heading = self.rad_heading()
         self.v2d.dx += self.accel * math.cos(heading) * self.dt * FPS
         self.v2d.dy += self.accel * math.sin(heading) * self.dt * FPS
         self.v2d.clamp(MAX_SPEED)
+
+    def update(self):
+        Sprite.update(self)
+        if self.shot_cooldown != 0:
+            self.shot_cooldown = clamp(self.shot_cooldown-self.dt, 0, 10)
+
+    def fire(self):
+        if self.shot_cooldown == 0:
+            self.shot_cooldown = 0.1
+            heading = self.rad_heading()
+            x = self.x + 40 * math.cos(heading)
+            y = self.y + 40 * math.sin(heading)
+            missile = Missile(x=x, y=y, heading=self.heading)
+            self.game.add_sprite(missile)
 
 
 # Functions
