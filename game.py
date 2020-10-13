@@ -90,6 +90,7 @@ class Game():
                 sprite.render()
     
             self.wn.update()
+            #print("len(Collider.instances): {}".format(len(Collider.instances)))
 
 
 class Vector2d():
@@ -106,6 +107,34 @@ class Vector2d():
             ratio = limit / mag
             self.dx *= ratio
             self.dy *= ratio
+
+
+class Collider():
+    instances = []
+
+    def __init__(self, sprite, offset=0, size=1):
+        self.sprite = sprite
+        self.offset = offset
+        self.size = size
+        Collider.instances.append(self)
+
+    def x(self):
+        return self.sprite.x + self.offset * math.cos(self.sprite.rad_heading())
+
+    def y(self):
+        return self.sprite.y + self.offset * math.sin(self.sprite.rad_heading())
+
+    def hit(self, other):
+        return math.sqrt((self.x() - other.x())**2 + (self.y() - other.y())**2) <= \
+            (self.size + other.size)
+
+    def destruct(self):
+        self.sprite.destruct()
+        try:
+            Collider.instances.remove(self)
+            del self
+        except ValueError as err:
+            print(err)
 
 
 class Sprite():
@@ -156,6 +185,9 @@ class Sprite():
         self.pen.shapesize(*self.shapesize)
         self.pen.stamp()
 
+    def destruct(self):
+        self.game.del_sprite(self)
+
 
 class Missile(Sprite):
     def __init__(self, x=0, y=0, shape='square', color='red',
@@ -166,15 +198,20 @@ class Missile(Sprite):
         self.v2d.dx = speed * math.cos(rad_heading)
         self.v2d.dy = speed * math.sin(rad_heading)
         self.dist = 0 # initialize distance travelled
+        self.collider = Collider(self, (shapesize[1]-1)*10, shapesize[0]*10)
 
     def update(self):
         Sprite.update(self)
         self.dist += self.v2d.magnitude() * self.dt * FPS
         if self.dist >= self.max_range:
-            self.destruct()
-
-    def destruct(self):
-        self.game.del_sprite(self)
+            self.collider.destruct()
+            return
+        for other in Collider.instances:
+            if self.collider == other:
+                continue
+            if self.collider.hit(other):
+                other.destruct()
+                self.collider.destruct()
         
 
 class Player(Sprite):
@@ -225,6 +262,7 @@ class Asteroid(Sprite):
         size=3, v2d=Vector2d()):
         Sprite.__init__(self, x, y, shape, color, (size, size, size))
         self.v2d = v2d
+        self.collider = Collider(self, 0, size*10)
 
     @staticmethod
     def spawn(game):
@@ -239,12 +277,16 @@ class Asteroid(Sprite):
             ast = Asteroid(x=x, y=y, size=3, v2d=Vector2d(dx, dy))
             game.add_sprite(ast)
             Asteroid.instances.append(ast)
-            Asteroid.spawn_limit += 1
+        Asteroid.spawn_limit += 1
 
     def update(self):
         Sprite.update(self)
+
+    def destruct(self):
+        Asteroid.instances.remove(self)
         if len(Asteroid.instances) == 0:
             Asteroid.spawn(self.game)
+        self.game.del_sprite(self)
 
 
 # Functions
