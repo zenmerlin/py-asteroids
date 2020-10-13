@@ -67,6 +67,7 @@ class Game():
     def listen(self):
         self.wn.listen()
         self.wn.onkeypress(self.player.accelerate, 'w')
+        self.wn.onkeypress(self.player.decelerate, 's')
 
         self.wn.onkeypress(self.player.rotate_left, 'a')
         self.wn.onkeyrelease(self.player.stop_rotation, 'a')
@@ -235,6 +236,12 @@ class Player(Sprite):
 
     def accelerate(self):
         heading = self.rad_heading()
+        self.v2d.dx += self.accel * math.cos(heading) * self.dt * FPS
+        self.v2d.dy += self.accel * math.sin(heading) * self.dt * FPS
+        self.v2d.clamp(MAX_SPEED)
+
+    def decelerate(self):
+        heading = math.radians(self.heading + 180)
         self.v2d.dx += self.accel * math.cos(heading) * self.dt * FPS
         self.v2d.dy += self.accel * math.sin(heading) * self.dt * FPS
         self.v2d.clamp(MAX_SPEED)
