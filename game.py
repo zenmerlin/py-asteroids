@@ -128,6 +128,13 @@ class Collider():
         return math.sqrt((self.x() - other.x())**2 + (self.y() - other.y())**2) <= \
             (self.size + other.size)
 
+    def get_hits(self):
+        hits = []
+        for other in Collider.instances:
+            if self != other and self.hit(other):
+                hits.append(other)
+        return hits
+
     def destruct(self):
         self.sprite.destruct()
         try:
@@ -206,12 +213,11 @@ class Missile(Sprite):
         if self.dist >= self.max_range:
             self.collider.destruct()
             return
-        for other in Collider.instances:
-            if self.collider == other:
-                continue
-            if self.collider.hit(other):
-                other.destruct()
-                self.collider.destruct()
+        hits = self.collider.get_hits()
+        if hits:
+            for collider in hits:
+                collider.destruct()
+            self.collider.destruct()
         
 
 class Player(Sprite):
