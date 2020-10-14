@@ -91,7 +91,6 @@ class Game():
                 sprite.render()
     
             self.wn.update()
-            #print("len(Collider.instances): {}".format(len(Collider.instances)))
 
 
 class Vector2d():
@@ -216,11 +215,12 @@ class Missile(Sprite):
         
 
 class Player(Sprite):
+    lives = 3
+    score = 0
+
     def __init__(self, x=0, y=0, shape='triangle', color='white',
         shapesize=(None, None, None)):
         Sprite.__init__(self, x, y, shape, color, shapesize)
-        self.lives = 3
-        self.score = 0
         self.heading = 90
         self.av = 5 # angular velocity (degrees per second)
         self.shot_cooldown = 0
@@ -267,7 +267,7 @@ class Asteroid(Sprite):
 
     def __init__(self, x=0, y=0, shape='circle', color='grey',
         size=3, v2d=Vector2d()):
-        Sprite.__init__(self, x, y, shape, color, (size, size, size))
+        Sprite.__init__(self, x, y, shape, color, (size, size))
         self.v2d = v2d
         self.collider = Collider(self, 0, size*10)
 
@@ -293,7 +293,7 @@ class Asteroid(Sprite):
         Asteroid.instances.remove(self)
         if len(Asteroid.instances) == 0:
             Asteroid.spawn(self.game)
-        self.game.del_sprite(self)
+        super().destruct()
 
 
 # Functions
