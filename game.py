@@ -31,6 +31,7 @@ class Game():
         self.setup_pen()
         self.sprites = []
         self.running = True
+        self.game_over = False
 
     def setup_screen(self):
         self.wn.setup(self.screen_width, self.screen_height)
@@ -64,7 +65,7 @@ class Game():
         except ValueError as err:
             print(err)
 
-    def listen(self):
+    def listen(self): # TODO: rename/refactor 
         self.wn.listen()
         self.wn.onkeypress(self.player.accelerate, 'w')
         self.wn.onkeypress(self.player.decelerate, 's')
@@ -79,6 +80,45 @@ class Game():
 
         self.wn.onkeypress(self.quit, 'BackSpace')
 
+    def set_game_over(self):
+        self.game_over = True
+        self.wn.onkeypress(self.reset, 'r')
+
+    def disp_game_over(self):
+        self.pen.color('orange')
+        self.pen.goto(0, 0)
+        self.pen.write('Game Over', align='center', font=('Consolas', 24, 'bold'))
+        # TODO: The second write call below flickers for some reason. Needs fixed.
+        #self.pen.goto(0, -20)
+        #self.pen.write('Press "r" to restart', align='center', font=('Consolas', 12, 'italic'))
+        self.pen.color('white')
+        
+    def reset(self):
+        # Reset player and game state
+        Player.lives = 3
+        Player.score = 0
+        Asteroid.spawn_limit = 3
+        
+        # Clear all game entities TODO: this isn't clearing everything. why?
+        for collider in Collider.instances:
+            collider.destruct()
+        for collider in Collider.instances: # keep missing one, so run again TODO: needs fixed
+            collider.destruct()
+        for asteroid in Asteroid.instances:
+            asteroid.destruct()
+        for sprite in self.sprites:
+            self.del_sprite(sprite)
+        print(Collider.instances)
+
+        # Create/setup new game entities
+        self.add_player(Player())
+        self.listen() # reset player controls
+        Asteroid.spawn(self)
+        self.game_over = False
+
+        # Clear reset key binding
+        self.wn.onkeypress(None, 'r')
+
     def loop(self):
         self.listen()
         while self.running:
@@ -89,6 +129,9 @@ class Game():
 
             for sprite in self.sprites:
                 sprite.render()
+
+            if self.game_over:
+                self.disp_game_over()
     
             self.wn.update()
 
@@ -220,15 +263,16 @@ class Missile(Sprite):
         
 
 class Player(Sprite):
-    lives = 3
+    lives = 0
     score = 0
 
     def __init__(self, x=0, y=0, shape='triangle', color='white',
-        shapesize=(None, None, None)):
+        shapesize=(0.5, 1, None)):
         Sprite.__init__(self, x, y, shape, color, shapesize)
         self.heading = 90
         self.av = 5 # angular velocity (degrees per second)
         self.shot_cooldown = 0
+        self.collider = Collider(sprite=self, size=shapesize[1]*1.25)
 
     def rotate_left(self):
         self.da = 1 * self.av
@@ -255,6 +299,10 @@ class Player(Sprite):
         Sprite.update(self)
         if self.shot_cooldown != 0:
             self.shot_cooldown = clamp(self.shot_cooldown-self.dt, 0, 10)
+        if self.collider.has_hits():
+            for collider in self.collider.hits:
+                collider.destruct()
+            self.collider.destruct()
 
     def fire(self):
         if self.shot_cooldown == 0:
@@ -264,6 +312,15 @@ class Player(Sprite):
             y = self.y + 40 * math.sin(heading)
             missile = Missile(x=x, y=y, heading=self.heading)
             self.game.add_sprite(missile)
+    
+    def destruct(self):
+        if Player.lives:
+            Player.lives -= 1
+            self.game.add_player(Player())
+            self.game.listen()
+        else:
+            self.game.set_game_over()
+        super().destruct()
 
 
 class Asteroid(Sprite):
@@ -296,7 +353,8 @@ class Asteroid(Sprite):
 
     def destruct(self):
         Asteroid.instances.remove(self)
-        if len(Asteroid.instances) == 0:
+        # TODO: code smell. Needs refactor
+        if len(Asteroid.instances) == 0 and not self.game.game_over:
             Asteroid.spawn(self.game)
         super().destruct()
 
@@ -328,6 +386,6 @@ config = {
 }
 
 game = Game(config)
-game.add_player(Player(shapesize=(0.5, 1)))
+game.add_player(Player())
 Asteroid.spawn(game)
 game.loop()
