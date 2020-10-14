@@ -117,6 +117,7 @@ class Collider():
         self.offset = offset
         self.size = size
         Collider.instances.append(self)
+        self.hits = []
 
     def x(self):
         return self.sprite.x + self.offset * math.cos(self.sprite.rad_heading())
@@ -128,12 +129,11 @@ class Collider():
         return math.sqrt((self.x() - other.x())**2 + (self.y() - other.y())**2) <= \
             (self.size + other.size)
 
-    def get_hits(self):
-        hits = []
+    def has_hits(self):
         for other in Collider.instances:
             if self != other and self.hit(other):
-                hits.append(other)
-        return hits
+                self.hits.append(other)
+        return len(self.hits) != 0
 
     def destruct(self):
         self.sprite.destruct()
@@ -213,9 +213,8 @@ class Missile(Sprite):
         if self.dist >= self.max_range:
             self.collider.destruct()
             return
-        hits = self.collider.get_hits()
-        if hits:
-            for collider in hits:
+        if self.collider.has_hits():
+            for collider in self.collider.hits:
                 collider.destruct()
             self.collider.destruct()
         
