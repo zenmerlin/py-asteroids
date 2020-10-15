@@ -31,7 +31,7 @@ class Game():
         self.setup_pen()
         self.sprites = []
         self.running = True
-        self.game_over = False
+        self.over = False
 
     def setup_screen(self):
         self.wn.setup(self.screen_width, self.screen_height)
@@ -61,7 +61,6 @@ class Game():
     def del_sprite(self, sprite):
         try:
             self.sprites.remove(sprite)
-            del sprite
         except ValueError as err:
             print(err)
 
@@ -81,40 +80,25 @@ class Game():
         self.wn.onkeypress(self.quit, 'BackSpace')
 
     def set_game_over(self):
-        self.game_over = True
+        self.over = True
         self.wn.onkeypress(self.reset, 'r')
 
-    def disp_game_over(self):
-        self.pen.color('orange')
-        self.pen.goto(0, 0)
-        self.pen.write('Game Over', align='center', font=('Consolas', 24, 'bold'))
-        # TODO: The second write call below flickers for some reason. Needs fixed.
-        #self.pen.goto(0, -20)
-        #self.pen.write('Press "r" to restart', align='center', font=('Consolas', 12, 'italic'))
-        self.pen.color('white')
-        
     def reset(self):
-        # Reset player and game state
-        Player.lives = 3
-        Player.score = 0
-        Asteroid.spawn_limit = 3
-        
-        # Clear all game entities TODO: this isn't clearing everything. why?
-        for collider in Collider.instances:
-            collider.destruct()
-        for collider in Collider.instances: # keep missing one, so run again TODO: needs fixed
-            collider.destruct()
-        for asteroid in Asteroid.instances:
-            asteroid.destruct()
-        for sprite in self.sprites:
-            self.del_sprite(sprite)
-        print(Collider.instances)
+        # TODO: reorganize instance management. should all be in game?
+        self.sprites = []
+        Asteroid.instances = []
+        Collider.instances = []
+        print('asteroids: {}'.format(Asteroid.instances))
+        print('colliders: {}'.format(Collider.instances))
 
         # Create/setup new game entities
+        Player.lives = 3
+        Player.score = 0
         self.add_player(Player())
         self.listen() # reset player controls
+        Asteroid.spawn_limit = 3
         Asteroid.spawn(self)
-        self.game_over = False
+        self.over = False
 
         # Clear reset key binding
         self.wn.onkeypress(None, 'r')
@@ -130,9 +114,6 @@ class Game():
             for sprite in self.sprites:
                 sprite.render()
 
-            if self.game_over:
-                self.disp_game_over()
-    
             self.wn.update()
 
 
@@ -179,10 +160,8 @@ class Collider():
         return len(self.hits) != 0
 
     def destruct(self):
-        self.sprite.destruct()
         try:
             Collider.instances.remove(self)
-            del self
         except ValueError as err:
             print(err)
 
@@ -254,16 +233,20 @@ class Missile(Sprite):
         Sprite.update(self)
         self.dist += self.v2d.magnitude() * self.dt * FPS
         if self.dist >= self.max_range:
-            self.collider.destruct()
+            self.destruct()
             return
         if self.collider.has_hits():
             for collider in self.collider.hits:
-                collider.destruct()
-            self.collider.destruct()
+                collider.sprite.destruct()
+            self.destruct()
+
+    def destruct(self):
+        self.collider.destruct()
+        super().destruct()
         
 
 class Player(Sprite):
-    lives = 0
+    lives = 1
     score = 0
 
     def __init__(self, x=0, y=0, shape='triangle', color='white',
@@ -300,9 +283,7 @@ class Player(Sprite):
         if self.shot_cooldown != 0:
             self.shot_cooldown = clamp(self.shot_cooldown-self.dt, 0, 10)
         if self.collider.has_hits():
-            for collider in self.collider.hits:
-                collider.destruct()
-            self.collider.destruct()
+            self.destruct()
 
     def fire(self):
         if self.shot_cooldown == 0:
@@ -314,13 +295,14 @@ class Player(Sprite):
             self.game.add_sprite(missile)
     
     def destruct(self):
-        if Player.lives:
+        self.collider.destruct()
+        super().destruct()
+        if Player.lives > 0:
             Player.lives -= 1
             self.game.add_player(Player())
             self.game.listen()
         else:
             self.game.set_game_over()
-        super().destruct()
 
 
 class Asteroid(Sprite):
@@ -352,9 +334,10 @@ class Asteroid(Sprite):
         Sprite.update(self)
 
     def destruct(self):
+        self.collider.destruct()
         Asteroid.instances.remove(self)
         # TODO: code smell. Needs refactor
-        if len(Asteroid.instances) == 0 and not self.game.game_over:
+        if len(Asteroid.instances) == 0 and not self.game.over:
             Asteroid.spawn(self.game)
         super().destruct()
 
