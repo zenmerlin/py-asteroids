@@ -86,10 +86,8 @@ class Game():
     def reset(self):
         # TODO: reorganize instance management. should all be in game?
         self.sprites = []
-        Asteroid.instances = []
+        Asteroid.count = 0
         Collider.instances = []
-        print('asteroids: {}'.format(Asteroid.instances))
-        print('colliders: {}'.format(Collider.instances))
 
         # Create/setup new game entities
         Player.lives = 3
@@ -246,7 +244,7 @@ class Missile(Sprite):
         
 
 class Player(Sprite):
-    lives = 1
+    lives = 3
     score = 0
 
     def __init__(self, x=0, y=0, shape='triangle', color='white',
@@ -306,7 +304,7 @@ class Player(Sprite):
 
 
 class Asteroid(Sprite):
-    instances = []
+    count = 0
     spawn_limit = 3
 
     def __init__(self, x=0, y=0, shape='circle', color='grey',
@@ -327,7 +325,7 @@ class Asteroid(Sprite):
 
             ast = Asteroid(x=x, y=y, size=3, v2d=Vector2d(dx, dy))
             game.add_sprite(ast)
-            Asteroid.instances.append(ast)
+            Asteroid.count += 1
         Asteroid.spawn_limit += 1
 
     def update(self):
@@ -335,9 +333,8 @@ class Asteroid(Sprite):
 
     def destruct(self):
         self.collider.destruct()
-        Asteroid.instances.remove(self)
-        # TODO: code smell. Needs refactor
-        if len(Asteroid.instances) == 0 and not self.game.over:
+        Asteroid.count -= 1
+        if Asteroid.count == 0 and not self.game.over:
             Asteroid.spawn(self.game)
         super().destruct()
 
