@@ -112,48 +112,6 @@ class Game():
             self.wn.update()
 
 
-class Vector2d():
-    def __init__(self, dx=0, dy=0):
-        self.dx = dx
-        self.dy = dy
-
-    def magnitude(self):
-        return math.sqrt(self.dx**2 + self.dy**2)
-
-    def clamp(self, limit):
-        mag = self.magnitude()
-        if mag > limit:
-            ratio = limit / mag
-            self.dx *= ratio
-            self.dy *= ratio
-
-
-class Collider():
-    def __init__(self, sprite, offset=0, size=1):
-        self.sprite = sprite
-        self.offset = offset
-        self.size = size
-        self.hits = []
-
-    def x(self):
-        return self.sprite.x + self.offset * math.cos(self.sprite.rad_heading())
-
-    def y(self):
-        return self.sprite.y + self.offset * math.sin(self.sprite.rad_heading())
-
-    def hit(self, other):
-        return math.sqrt((self.x() - other.x())**2 + (self.y() - other.y())**2) <= \
-            (self.size + other.size)
-
-    def has_hits(self):
-        for other in self.sprite.game.sprites:
-            if not hasattr(other, 'collider'):
-                continue
-            if self != other.collider and self.hit(other.collider):
-                self.hits.append(other)
-        return len(self.hits) != 0
-
-
 class Sprite():
     def __init__(self, x, y, shape, color, shapesize=(None, None, None),
         heading=90):
@@ -206,30 +164,46 @@ class Sprite():
         self.game.del_sprite(self)
 
 
-class Missile(Sprite):
-    def __init__(self, x=0, y=0, shape='square', color='red',
-        shapesize=(0.05, 3, None), heading=90, speed=12, max_range=175):
-        Sprite.__init__(self, x, y, shape, color, shapesize, heading)
-        self.max_range = max_range
-        rad_heading = self.rad_heading()
-        self.v2d.dx = speed * math.cos(rad_heading)
-        self.v2d.dy = speed * math.sin(rad_heading)
-        self.dist = 0 # initialize distance travelled
-        self.collider = Collider(self, (shapesize[1]-1)*10, shapesize[0]*10)
+class Vector2d():
+    def __init__(self, dx=0, dy=0):
+        self.dx = dx
+        self.dy = dy
 
-    def update(self):
-        super().update()
-        self.dist += self.v2d.magnitude() * self.dt * FPS
-        if self.dist >= self.max_range:
-            self.destruct()
-            return
-        if self.collider.has_hits():
-            for sprite in self.collider.hits:
-                sprite.destruct()
-            self.destruct()
+    def magnitude(self):
+        return math.sqrt(self.dx**2 + self.dy**2)
 
-    def destruct(self):
-        super().destruct()
+    def clamp(self, limit):
+        mag = self.magnitude()
+        if mag > limit:
+            ratio = limit / mag
+            self.dx *= ratio
+            self.dy *= ratio
+
+
+class Collider():
+    def __init__(self, sprite, offset=0, size=1):
+        self.sprite = sprite
+        self.offset = offset
+        self.size = size
+        self.hits = []
+
+    def x(self):
+        return self.sprite.x + self.offset * math.cos(self.sprite.rad_heading())
+
+    def y(self):
+        return self.sprite.y + self.offset * math.sin(self.sprite.rad_heading())
+
+    def hit(self, other):
+        return math.sqrt((self.x() - other.x())**2 + (self.y() - other.y())**2) <= \
+            (self.size + other.size)
+
+    def has_hits(self):
+        for other in self.sprite.game.sprites:
+            if not hasattr(other, 'collider'):
+                continue
+            if self != other.collider and self.hit(other.collider):
+                self.hits.append(other)
+        return len(self.hits) != 0
         
 
 class Player(Sprite):
@@ -289,6 +263,32 @@ class Player(Sprite):
             self.game.listen()
         else:
             self.game.set_game_over()
+
+
+class Missile(Sprite):
+    def __init__(self, x=0, y=0, shape='square', color='red',
+        shapesize=(0.05, 3, None), heading=90, speed=12, max_range=175):
+        Sprite.__init__(self, x, y, shape, color, shapesize, heading)
+        self.max_range = max_range
+        rad_heading = self.rad_heading()
+        self.v2d.dx = speed * math.cos(rad_heading)
+        self.v2d.dy = speed * math.sin(rad_heading)
+        self.dist = 0 # initialize distance travelled
+        self.collider = Collider(self, (shapesize[1]-1)*10, shapesize[0]*10)
+
+    def update(self):
+        super().update()
+        self.dist += self.v2d.magnitude() * self.dt * FPS
+        if self.dist >= self.max_range:
+            self.destruct()
+            return
+        if self.collider.has_hits():
+            for sprite in self.collider.hits:
+                sprite.destruct()
+            self.destruct()
+
+    def destruct(self):
+        super().destruct()
 
 
 class Asteroid(Sprite):
