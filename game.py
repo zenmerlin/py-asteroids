@@ -84,16 +84,13 @@ class Game():
         self.wn.onkeypress(self.reset, 'r')
 
     def reset(self):
-        # TODO: reorganize instance management. should all be in game?
-        self.sprites = []
-        Asteroid.count = 0
-        Collider.instances = []
-
         # Create/setup new game entities
+        self.sprites = []
         Player.lives = 3
         Player.score = 0
         self.add_player(Player())
         self.listen() # reset player controls
+        Asteroid.count = 0
         Asteroid.spawn_limit = 3
         Asteroid.spawn(self)
         self.over = False
@@ -132,13 +129,10 @@ class Vector2d():
 
 
 class Collider():
-    instances = []
-
     def __init__(self, sprite, offset=0, size=1):
         self.sprite = sprite
         self.offset = offset
         self.size = size
-        Collider.instances.append(self)
         self.hits = []
 
     def x(self):
@@ -152,16 +146,12 @@ class Collider():
             (self.size + other.size)
 
     def has_hits(self):
-        for other in Collider.instances:
-            if self != other and self.hit(other):
+        for other in self.sprite.game.sprites:
+            if not hasattr(other, 'collider'):
+                continue
+            if self != other.collider and self.hit(other.collider):
                 self.hits.append(other)
         return len(self.hits) != 0
-
-    def destruct(self):
-        try:
-            Collider.instances.remove(self)
-        except ValueError as err:
-            print(err)
 
 
 class Sprite():
@@ -228,18 +218,17 @@ class Missile(Sprite):
         self.collider = Collider(self, (shapesize[1]-1)*10, shapesize[0]*10)
 
     def update(self):
-        Sprite.update(self)
+        super().update()
         self.dist += self.v2d.magnitude() * self.dt * FPS
         if self.dist >= self.max_range:
             self.destruct()
             return
         if self.collider.has_hits():
-            for collider in self.collider.hits:
-                collider.sprite.destruct()
+            for sprite in self.collider.hits:
+                sprite.destruct()
             self.destruct()
 
     def destruct(self):
-        self.collider.destruct()
         super().destruct()
         
 
@@ -293,7 +282,6 @@ class Player(Sprite):
             self.game.add_sprite(missile)
     
     def destruct(self):
-        self.collider.destruct()
         super().destruct()
         if Player.lives > 0:
             Player.lives -= 1
@@ -332,7 +320,6 @@ class Asteroid(Sprite):
         Sprite.update(self)
 
     def destruct(self):
-        self.collider.destruct()
         Asteroid.count -= 1
         if Asteroid.count == 0 and not self.game.over:
             Asteroid.spawn(self.game)
