@@ -308,8 +308,8 @@ class Asteroid(Sprite):
                 game.screen_width/2)
             y = random.randint(-game.screen_height/2,
                 game.screen_height/2)
-            dx = random.randint(-1, 1)
-            dy = random.randint(-1, 1)
+            dx = random.choice((-1, 1)) * random.randrange(1, 10, 1) / 10
+            dy = random.choice((-1, 1)) * random.randrange(1, 10, 1) / 10
 
             ast = Asteroid(x=x, y=y, size=3, v2d=Vector2d(dx, dy))
             game.add_sprite(ast)
