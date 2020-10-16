@@ -297,6 +297,7 @@ class Asteroid(Sprite):
 
     def __init__(self, x=0, y=0, shape='circle', color='grey',
         size=3, v2d=Vector2d()):
+        self.size = size
         Sprite.__init__(self, x, y, shape, color, (size, size))
         self.v2d = v2d
         self.collider = Collider(self, 0, size*10)
@@ -316,14 +317,78 @@ class Asteroid(Sprite):
             Asteroid.count += 1
         Asteroid.spawn_limit += 1
 
-    def update(self):
-        Sprite.update(self)
-
     def destruct(self):
         Asteroid.count -= 1
+        self.game.add_sprite(Explosion(self.x, self.y, start_radius=self.size*2,
+            max_radius=self.size*10+10, step=10))
         if Asteroid.count == 0 and not self.game.over:
             Asteroid.spawn(self.game)
         super().destruct()
+
+
+class Explosion(Sprite):
+    def __init__(self, x, y, start_radius=10, max_radius=20, step=1):
+        self.x = x
+        self.y = y
+        self.radius = start_radius
+        self.radius2 = start_radius
+        self.max_radius = max_radius
+        self.step = step
+        self.step_decr = step / 10
+        self.t = 0 # time at update
+        self.dt = 0 # delta t (time change between updates)
+
+    def update(self):
+        if self.t == 0:
+            self.t = time.time() # initialize time at start of game loop
+            return
+        t0 = self.t # record initial time
+        self.t = time.time() # set current time
+        self.dt = self.t - t0 # calculate elapsed time (delta t)
+        if self.radius < self.max_radius:
+            self.radius += self.step * self.dt * FPS
+        elif self.radius2 < self.max_radius:
+            self.step -= self.step_decr
+            self.radius2 += self.step * self.dt * FPS
+        elif self.radius2 == self.max_radius:
+            self.destruct()
+    
+    def render(self):
+        self.save_pen_state()
+        self.setup_pen()
+        self.draw_explosion()
+        self.restore_pen()
+
+    def save_pen_state(self):
+        self.prev_h = self.pen.heading()
+        self.prev_pc = self.pen.pencolor()
+        self.prev_fc = self.pen.fillcolor()
+        self.prev_ps = self.pen.pensize()
+
+    def setup_pen(self):
+        self.pen.seth(90)
+        self.pen.pencolor('orange')
+        self.pen.fillcolor('yellow')
+        self.pen.pensize(1)
+
+    def draw_explosion(self):
+        self.pen.goto(self.x+self.radius, self.y)
+        self.pen.begin_fill()
+        self.pen.circle(self.radius)
+        self.pen.end_fill()
+        if self.radius >= self.max_radius:
+            self.pen.pencolor('black')
+            self.pen.fillcolor('black')
+            self.pen.goto(self.x+self.radius2, self.y)
+            self.pen.begin_fill()
+            self.pen.circle(self.radius2)
+            self.pen.end_fill()
+
+    def restore_pen(self):
+        self.pen.seth(self.prev_h)
+        self.pen.pencolor(self.prev_pc)
+        self.pen.fillcolor(self.prev_fc)
+        self.pen.pensize(self.prev_ps)
 
 
 # Functions
