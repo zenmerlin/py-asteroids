@@ -217,6 +217,7 @@ class Player(Sprite):
         self.av = 5 # angular velocity (degrees per second)
         self.shot_cooldown = 0
         self.collider = Collider(sprite=self, size=shapesize[1]*1.25)
+        self.size = max(shapesize[0], shapesize[1])
 
     def rotate_left(self):
         self.da = 1 * self.av
@@ -256,7 +257,10 @@ class Player(Sprite):
             self.game.add_sprite(missile)
     
     def destruct(self):
+
         super().destruct()
+        self.game.add_sprite(Explosion(self.x, self.y, start_radius=self.size*2,
+            max_radius=self.size*10+10, step=10))
         if Player.lives > 0:
             Player.lives -= 1
             self.game.add_player(Player())
@@ -332,9 +336,9 @@ class Explosion(Sprite):
         self.y = y
         self.radius = start_radius
         self.radius2 = start_radius
+        self.radius3 = start_radius
         self.max_radius = max_radius
         self.step = step
-        self.step_decr = step / 10
         self.t = 0 # time at update
         self.dt = 0 # delta t (time change between updates)
 
@@ -349,7 +353,9 @@ class Explosion(Sprite):
             self.radius += self.step * self.dt * FPS
         elif self.radius2 < self.max_radius:
             self.radius2 += self.step * self.dt * FPS
-        elif self.radius2 >= self.max_radius:
+        elif self.radius3 < self.max_radius:
+            self.radius3 += self.step * self.dt * FPS
+        elif self.radius3 >= self.max_radius:
             self.destruct()
     
     def render(self):
@@ -366,7 +372,7 @@ class Explosion(Sprite):
 
     def setup_pen(self):
         self.pen.seth(90)
-        self.pen.pencolor('orange')
+        self.pen.pencolor('yellow')
         self.pen.fillcolor('yellow')
         self.pen.pensize(1)
 
@@ -376,12 +382,17 @@ class Explosion(Sprite):
         self.pen.circle(self.radius)
         self.pen.end_fill()
         if self.radius >= self.max_radius:
-            self.pen.pencolor('black')
-            self.pen.fillcolor('black')
-            self.pen.goto(self.x+self.radius2, self.y)
-            self.pen.begin_fill()
-            self.pen.circle(self.radius2)
-            self.pen.end_fill()
+            self.draw_phase('red', self.radius2)
+        elif self.radius2 >= self.max_radius:
+            self.draw_phase('black', self.radius3)
+
+    def draw_phase(self, color, radius):
+        self.pen.pencolor(color)
+        self.pen.fillcolor(color)
+        self.pen.goto(self.x+radius, self.y)
+        self.pen.begin_fill()
+        self.pen.circle(radius)
+        self.pen.end_fill()
 
     def restore_pen(self):
         self.pen.seth(self.prev_h)
