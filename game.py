@@ -260,7 +260,7 @@ class Player(Sprite):
 
         super().destruct()
         self.game.add_sprite(Explosion(self.x, self.y, start_radius=self.size*2,
-            max_radius=self.size*10+10, step=10))
+            max_radius=self.size*10+15, step=10))
         if Player.lives > 0:
             Player.lives -= 1
             self.game.add_player(Player())
