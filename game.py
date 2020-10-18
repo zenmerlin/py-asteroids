@@ -348,9 +348,8 @@ class Explosion(Sprite):
         if self.radius < self.max_radius:
             self.radius += self.step * self.dt * FPS
         elif self.radius2 < self.max_radius:
-            self.step -= self.step_decr
             self.radius2 += self.step * self.dt * FPS
-        elif self.radius2 == self.max_radius:
+        elif self.radius2 >= self.max_radius:
             self.destruct()
     
     def render(self):
