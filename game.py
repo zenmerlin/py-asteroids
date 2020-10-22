@@ -165,12 +165,27 @@ class Sprite():
 
 
 class Vector2d():
-    def __init__(self, dx=0, dy=0):
-        self.dx = dx
-        self.dy = dy
+    def __init__(self, dx=None, dy=None, mag=None, ang=None):
+        if dx and dy:
+            self.dx = dx
+            self.dy = dy
+        elif mag and ang:
+            self.dx = mag * math.cos(math.radians(ang)) 
+            self.dy = mag * math.sin(math.radians(ang)) 
+        else:
+            self.dx = 0
+            self.dy = 0
 
     def magnitude(self):
         return math.sqrt(self.dx**2 + self.dy**2)
+
+    def angle(self):
+        if self.dx < 0:
+            return math.degrees(math.atan(self.dy / self.dx)) + 180
+        elif self.dy < 0:
+            return math.degrees(math.atan(self.dy / self.dx)) + 360
+        else:
+            return math.degrees(math.atan(self.dy / self.dx))
 
     def clamp(self, limit):
         mag = self.magnitude()
@@ -308,7 +323,7 @@ class Asteroid(Sprite):
 
     @staticmethod
     def spawn(game):
-        for i in range(Asteroid.spawn_limit):
+        for _ in range(Asteroid.spawn_limit):
             x = random.randint(-game.screen_width/2,
                 game.screen_width/2)
             y = random.randint(-game.screen_height/2,
@@ -321,10 +336,27 @@ class Asteroid(Sprite):
             Asteroid.count += 1
         Asteroid.spawn_limit += 1
 
+    def spawn_fragments(self):
+        mag = random.randrange(1, 10, 1) / 10
+        ang = random.randint(0, 359)
+        incr = 360 / self.size
+        for _ in range(self.size):
+            ang += incr
+            if ang > 360:
+                ang -= 360
+            v2d = Vector2d(mag=mag, ang=ang)
+            x = self.x + v2d.dx * 5
+            y = self.y + v2d.dy * 5
+            ast = Asteroid(x=x, y=y, size=self.size-1, v2d=v2d)
+            self.game.add_sprite(ast)
+            Asteroid.count += 1
+
     def destruct(self):
         Asteroid.count -= 1
         self.game.add_sprite(Explosion(self.x, self.y, start_radius=self.size*2,
             max_radius=self.size*10+10, step=10))
+        if self.size > 1:
+            self.spawn_fragments()
         if Asteroid.count == 0 and not self.game.over:
             Asteroid.spawn(self.game)
         super().destruct()
@@ -420,14 +452,17 @@ def clamp(val, minimum, maximum):
         return val
 
 
-# Main
-config = {
-    'screen_width': 800,
-    'screen_height': 600,
-    'title': 'Turtle Asteroids!',
-}
+def main():
+    config = {
+        'screen_width': 800,
+        'screen_height': 600,
+        'title': 'Turtle Asteroids!',
+    }
+    game = Game(config)
+    game.add_player(Player())
+    Asteroid.spawn(game)
+    game.loop()
 
-game = Game(config)
-game.add_player(Player())
-Asteroid.spawn(game)
-game.loop()
+
+if __name__ == '__main__':
+    main()
