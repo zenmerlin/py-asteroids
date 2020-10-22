@@ -293,7 +293,10 @@ class Missile(Sprite):
         self.v2d.dx = speed * math.cos(rad_heading)
         self.v2d.dy = speed * math.sin(rad_heading)
         self.dist = 0 # initialize distance travelled
-        self.collider = Collider(self, (shapesize[1]-1)*10, shapesize[0]*10)
+        self.colliders = [
+            Collider(self, (shapesize[1]-1)*10, shapesize[0]*10),
+            Collider(self, (shapesize[1]-1)*-5, shapesize[0]*10)
+        ]
 
     def update(self):
         super().update()
@@ -301,10 +304,12 @@ class Missile(Sprite):
         if self.dist >= self.max_range:
             self.destruct()
             return
-        if self.collider.has_hits():
-            for sprite in self.collider.hits:
-                sprite.destruct()
-            self.destruct()
+        for collider in self.colliders:
+            if collider.has_hits():
+                for sprite in collider.hits:
+                    sprite.destruct()
+                self.destruct()
+                break
 
     def destruct(self):
         super().destruct()
