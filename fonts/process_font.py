@@ -27,6 +27,10 @@ except err:
     print("Unexpected error occurred: {}".format(err))
     sys.exit(1)
 
+# Create compiled directory if it doesn't exist
+if COMPILED_DIR not in os.listdir():
+    os.mkdir(COMPILED_DIR)
+
 CHARS = [
     " ", "!", '"', "#", "$", "%", "&", "'",
     "(", ")", "*", "+", ",", "-", ".", "/",
