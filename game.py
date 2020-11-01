@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-'''
+"""
 Turtle Asteroids
-'''
+"""
 
 import math
 import random
@@ -12,19 +12,21 @@ import turtle
 # Constants
 FPS = 60
 MAX_SPEED = 5
+STARTING_ASTEROIDS = 6
+STARTING_LIVES = 3
 
 
 # Classes
 class Game():
     def __init__(self, config):
-        self.screen_width = 800 if 'screen_width' not in config.keys() else \
-            config['screen_width']
-        self.screen_height = 600 if 'screen_height' not in config.keys() else \
-            config['screen_height']
-        self.title = 'Game Title Here' if 'title' not in config.keys() else \
-            config['title']
-        self.bgcolor = 'black' if 'bgcolor' not in config.keys() else \
-            config['bgcolor']
+        self.screen_width = 800 if "screen_width" not in config.keys() else \
+            config["screen_width"]
+        self.screen_height = 600 if "screen_height" not in config.keys() else \
+            config["screen_height"]
+        self.title = "Game Title Here" if "title" not in config.keys() else \
+            config["title"]
+        self.bgcolor = "black" if "bgcolor" not in config.keys() else \
+            config["bgcolor"]
         self.wn = turtle.Screen()
         self.setup_screen()
         self.pen = turtle.Turtle()
@@ -41,8 +43,8 @@ class Game():
 
     def setup_pen(self):
         self.pen.speed(0)
-        self.pen.shape('square')
-        self.pen.color('white')
+        self.pen.shape("square")
+        self.pen.color("white")
         self.pen.penup()
         self.pen.hideturtle()
 
@@ -66,37 +68,37 @@ class Game():
 
     def listen(self): # TODO: rename/refactor 
         self.wn.listen()
-        self.wn.onkeypress(self.player.accelerate, 'w')
-        self.wn.onkeypress(self.player.decelerate, 's')
+        self.wn.onkeypress(self.player.accelerate, "w")
+        self.wn.onkeypress(self.player.decelerate, "s")
 
-        self.wn.onkeypress(self.player.rotate_left, 'a')
-        self.wn.onkeyrelease(self.player.stop_rotation, 'a')
+        self.wn.onkeypress(self.player.rotate_left, "a")
+        self.wn.onkeyrelease(self.player.stop_rotation, "a")
 
-        self.wn.onkeypress(self.player.rotate_right, 'd')
-        self.wn.onkeyrelease(self.player.stop_rotation, 'd')
+        self.wn.onkeypress(self.player.rotate_right, "d")
+        self.wn.onkeyrelease(self.player.stop_rotation, "d")
 
-        self.wn.onkeypress(self.player.fire, 'space')
+        self.wn.onkeypress(self.player.fire, "space")
 
-        self.wn.onkeypress(self.quit, 'BackSpace')
+        self.wn.onkeypress(self.quit, "BackSpace")
 
     def set_game_over(self):
         self.over = True
-        self.wn.onkeypress(self.reset, 'r')
+        self.wn.onkeypress(self.reset, "r")
 
     def reset(self):
         # Create/setup new game entities
         self.sprites = []
-        Player.lives = 3
+        Player.lives = STARTING_LIVES
         Player.score = 0
         self.add_player(Player())
         self.listen() # reset player controls
         Asteroid.count = 0
-        Asteroid.spawn_limit = 3
+        Asteroid.spawn_limit = STARTING_ASTEROIDS
         Asteroid.spawn(self)
         self.over = False
 
         # Clear reset key binding
-        self.wn.onkeypress(None, 'r')
+        self.wn.onkeypress(None, "r")
 
     def loop(self):
         self.listen()
@@ -214,7 +216,7 @@ class Collider():
 
     def has_hits(self):
         for other in self.sprite.game.sprites:
-            if not hasattr(other, 'collider'):
+            if not hasattr(other, "collider"):
                 continue
             if self != other.collider and self.hit(other.collider):
                 self.hits.append(other)
@@ -222,10 +224,10 @@ class Collider():
         
 
 class Player(Sprite):
-    lives = 3
+    lives = STARTING_LIVES
     score = 0
 
-    def __init__(self, x=0, y=0, shape='triangle', color='white',
+    def __init__(self, x=0, y=0, shape="triangle", color="white",
         shapesize=(0.5, 1, None)):
         Sprite.__init__(self, x, y, shape, color, shapesize)
         self.heading = 90
@@ -285,7 +287,7 @@ class Player(Sprite):
 
 
 class Missile(Sprite):
-    def __init__(self, x=0, y=0, shape='square', color='red',
+    def __init__(self, x=0, y=0, shape="square", color="red",
         shapesize=(0.05, 3, None), heading=90, speed=12, max_range=175):
         Sprite.__init__(self, x, y, shape, color, shapesize, heading)
         self.max_range = max_range
@@ -317,9 +319,9 @@ class Missile(Sprite):
 
 class Asteroid(Sprite):
     count = 0
-    spawn_limit = 3
+    spawn_limit = 6
 
-    def __init__(self, x=0, y=0, shape='circle', color='grey',
+    def __init__(self, x=0, y=0, shape="circle", color="grey",
         size=3, v2d=Vector2d()):
         self.size = size
         Sprite.__init__(self, x, y, shape, color, (size, size))
@@ -409,8 +411,8 @@ class Explosion(Sprite):
 
     def setup_pen(self):
         self.pen.seth(90)
-        self.pen.pencolor('yellow')
-        self.pen.fillcolor('yellow')
+        self.pen.pencolor("yellow")
+        self.pen.fillcolor("yellow")
         self.pen.pensize(1)
 
     def draw_explosion(self):
@@ -419,9 +421,9 @@ class Explosion(Sprite):
         self.pen.circle(self.radius)
         self.pen.end_fill()
         if self.radius >= self.max_radius:
-            self.draw_phase('red', self.radius2)
+            self.draw_phase("red", self.radius2)
         elif self.radius2 >= self.max_radius:
-            self.draw_phase('black', self.radius3)
+            self.draw_phase("black", self.radius3)
 
     def draw_phase(self, color, radius):
         self.pen.pencolor(color)
@@ -459,9 +461,9 @@ def clamp(val, minimum, maximum):
 
 def main():
     config = {
-        'screen_width': 800,
-        'screen_height': 600,
-        'title': 'Turtle Asteroids!',
+        "screen_width": 800,
+        "screen_height": 600,
+        "title": "Turtle Asteroids!",
     }
     game = Game(config)
     game.add_player(Player())
@@ -469,5 +471,5 @@ def main():
     game.loop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
