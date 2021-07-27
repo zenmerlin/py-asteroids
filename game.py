@@ -320,11 +320,12 @@ class Asteroid(Sprite):
     spawn_limit = 3
 
     def __init__(self, x=0, y=0, shape='circle', color='grey',
-        size=3, v2d=Vector2d()):
+        size=3, v2d=Vector2d(), frags=3):
         self.size = size
         Sprite.__init__(self, x, y, shape, color, (size, size))
         self.v2d = v2d
         self.collider = Collider(self, 0, size*10)
+        self.frags = frags
 
     @staticmethod
     def spawn(game):
@@ -336,7 +337,8 @@ class Asteroid(Sprite):
             dx = random.choice((-1, 1)) * random.randrange(1, 10, 1) / 10
             dy = random.choice((-1, 1)) * random.randrange(1, 10, 1) / 10
 
-            ast = Asteroid(x=x, y=y, size=3, v2d=Vector2d(dx, dy))
+            ast = Asteroid(x=x, y=y, size=3, v2d=Vector2d(dx, dy),
+                frags=random.randint(3, 5))
             game.add_sprite(ast)
             Asteroid.count += 1
         Asteroid.spawn_limit += 1
@@ -344,15 +346,16 @@ class Asteroid(Sprite):
     def spawn_fragments(self):
         mag = random.randrange(1, 10, 1) / 10
         ang = random.randint(0, 359)
-        incr = 360 / self.size
-        for _ in range(self.size):
+        incr = 360 / self.frags
+        for _ in range(self.frags):
             ang += incr
             if ang > 360:
                 ang -= 360
             v2d = Vector2d(mag=mag, ang=ang)
             x = self.x + v2d.dx * 5
             y = self.y + v2d.dy * 5
-            ast = Asteroid(x=x, y=y, size=self.size-1, v2d=v2d)
+            ast = Asteroid(x=x, y=y, size=self.size-1, v2d=v2d,
+                frags=random.randint(3, 5))
             self.game.add_sprite(ast)
             Asteroid.count += 1
 
