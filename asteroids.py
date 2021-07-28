@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-Turtle Asteroids
+PyAsteroids
 '''
 
 import math
