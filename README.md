@@ -2,11 +2,11 @@
 
 ![game play demo](./gameplaydemo.gif)
 
-## Motivation
+## Overview
 
-This is a simple Asteroids like game written in Python using only built-ins,
-the standard library, and turtle graphics used as a teaching aid to
-demonstrate programming and basic game development concepts to my son.
+This is a simple Asteroids-like game written in Python using only built-ins,
+the standard library, and turtle graphics to demonstrate basic programming
+and game development concepts.
 
 Concepts covered include:
 
