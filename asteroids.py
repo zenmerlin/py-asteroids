@@ -464,7 +464,7 @@ def main():
     config = {
         'screen_width': 800,
         'screen_height': 600,
-        'title': 'Turtle Asteroids!',
+        'title': 'py-asteroids',
     }
     game = Game(config)
     game.add_player(Player())
