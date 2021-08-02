@@ -42,6 +42,6 @@ the next. Object of the game is to see how far you can get before you run out of
 ships.
 
 When the game is over, your ship will not respawn. At this point you can restart
-the game by pressing `R`. You can end the game at any time by pressing `Backspace`.
+the game by pressing `r`. You can end the game at any time by pressing `backspace`.
 
 Have fun!
